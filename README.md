@@ -1,4 +1,4 @@
-````markdown
+
 # CurrencyConverter.Api
 
 This project is an API service designed to convert currencies using an external exchange rate API. The main functionality is provided by the `CurrencyConverterService` class, which takes in an `ExchangeRequest` and returns an `ExchangeResponse`.
@@ -19,7 +19,7 @@ Before running the solution, ensure you have the following installed:
 
    ```bash
    git clone https://github.com/angelkomarov/CurrencyConverter.Api.git
-````
+
 
 2. Open the solution in Visual Studio or your preferred IDE.
 
@@ -95,11 +95,10 @@ However, a few improvements could be made to handle errors in a more robust way:
 1. **Global Exception Handling**:
 
    * It might be beneficial to implement global exception handling using middleware or a centralized error handler, which would help avoid repetitive try-catch blocks in individual services.
-   * You could use a custom exception filter to handle `HttpRequestException` and return a structured error response (e.g., HTTP 500 with a meaningful error message).
 
 2. **API Key Management**:
 
-   * The API key is hardcoded in the code (`fb26a56ef07a26d08e3863d2`). This is not secure for production use. Consider storing the API key in a secure configuration file (e.g., `appsettings.json`) or environment variables.
+   * The API key is hardcoded in the code (`fb26a56ef07a26d08e3863d2`). This is not secure for production use. The API key better be stored in a secure configuration file (e.g., `appsettings.json`) or environment variables.
 
    Example (`appsettings.json`):
 
@@ -112,7 +111,7 @@ However, a few improvements could be made to handle errors in a more robust way:
    }
    ```
 
-   You could then inject these settings into the `CurrencyConverterService` through dependency injection.
+   These settings then can be injected into the `CurrencyConverterService` through dependency injection.
 
 3. **API Response Validation**:
 
@@ -140,21 +139,15 @@ However, a few improvements could be made to handle errors in a more robust way:
 
    * Consider caching the exchange rates for a period of time (e.g., 1 hour if possible) to avoid unnecessary API calls and reduce external dependencies.
 
-6. **Unit Tests**:
+6. **Rate Limiting**:
 
-   * Extend unit tests mock API calls correctly. The tests use Moq to mock the `IHttpClientFactory` and `HttpClient`, simulating responses from the API. This prevents the tests from making actual API calls and ensures faster, more reliable tests.
+   * The free version of external exchange rate API may have rate limits or restrictions. 
 
-7. **Rate Limiting**:
-
-   * The external exchange rate API may have rate limits or restrictions. Implement a strategy to handle this, such as retries with exponential backoff or fallback mechanisms.
-
-8. **Logging Improvements**:
+7. **Logging Improvements**:
 
    * Logging could be enhanced with additional context information (e.g., request IDs, transaction IDs) to make it easier to trace issues, especially in production environments.
 
 ## Additional Notes
-
-* The solution currently uses `HttpClient` in a `using` block, which is generally discouraged. The recommended approach is to use `IHttpClientFactory` (which is already implemented here) to prevent socket exhaustion issues that can occur if `HttpClient` is not reused.
 
 * The external API might not be available all the time, so it's a good idea to implement retries for transient failures and notify the user when the service is temporarily unavailable.
 
