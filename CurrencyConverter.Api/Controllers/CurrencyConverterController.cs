@@ -1,9 +1,14 @@
-﻿using CurrencyConverter.Api.Models;
+﻿using CurrencyConverter.Api.DTOs.ExchangeRate;
 using CurrencyConverter.Api.Services;
 using CurrencyConverter.Api.Services.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+
+//!!AK1.4 Microsoft.Extensions.Http.Polly is a NuGet package that integrates the Polly library with IHttpClientFactory in .NET applications.
+//Its primary purpose is to provide robust resilience and transient fault-handling capabilities for HTTP client operations.
+//dotnet add package Microsoft.Extensions.Http.Polly
+//NuGet\Install-Package Microsoft.Extensions.Http.Polly -Version 9.0.8
 
 namespace CurrencyConverter.Api.Controllers
 {

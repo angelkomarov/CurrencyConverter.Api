@@ -1,8 +1,8 @@
-﻿namespace CurrencyConverter.Api.Models
+﻿namespace CurrencyConverter.Api.Models.ExchangeRate
 {
-    public class ProgramSettings
+    public class ExchangeRateApiSettings
     {
-        public string ExchangeRateUrl { get; set; } = string.Empty;
+        public string Url { get; set; } = string.Empty;
         public string Version { get; set; } = string.Empty;
         public string ApiKey { get; set; } = string.Empty;
         public string Operation { get; set; } = string.Empty;

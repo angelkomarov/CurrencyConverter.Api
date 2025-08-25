@@ -1,4 +1,4 @@
-﻿namespace CurrencyConverter.Api.Models
+﻿namespace CurrencyConverter.Api.DTOs.ExchangeRate
 {
     public class ExchangeResponse
     {

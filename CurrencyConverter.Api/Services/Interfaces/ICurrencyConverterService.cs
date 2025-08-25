@@ -1,4 +1,4 @@
-﻿using CurrencyConverter.Api.Models;
+﻿using CurrencyConverter.Api.DTOs.ExchangeRate;
 
 namespace CurrencyConverter.Api.Services.Interfaces
 {

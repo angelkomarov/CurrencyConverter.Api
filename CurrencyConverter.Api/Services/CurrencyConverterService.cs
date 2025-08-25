@@ -1,4 +1,5 @@
-﻿using CurrencyConverter.Api.Models;
+﻿using CurrencyConverter.Api.DTOs.ExchangeRate;
+using CurrencyConverter.Api.Models.ExchangeRate;
 using CurrencyConverter.Api.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -11,31 +12,37 @@ namespace CurrencyConverter.Api.Services
     public class CurrencyConverterService : ICurrencyConverterService
     {
         private readonly ILogger<CurrencyConverterService> _logger;
-        private readonly ProgramSettings _settings;
+        private readonly ExchangeRateApiSettings _exchangeRateApiSettings;
         private readonly HttpClient _httpClient;
 
         public CurrencyConverterService(IHttpClientFactory httpClientFactory,
         ILogger<CurrencyConverterService> logger, 
-        IOptions<ProgramSettings> programSettings)
+        IOptions<ExchangeRateApiSettings> exchangeRateApiSettings)
         {
             _logger = logger;
-            _settings = programSettings.Value;
+            _exchangeRateApiSettings = exchangeRateApiSettings.Value;
+            //!!AK1.3 You get a new HttpClient instance each time.
+            //BUT the factory reuses an existing HttpMessageHandler (the heavy part that manages TCP/SSL connections)
+            //for multiple HttpClients until the handler’s lifetime expires (default: 2 minutes).
+            //Once the handler lifetime expires, a new one is created and old connections are gracefully closed.
             _httpClient = httpClientFactory.CreateClient("ExchangeRateApi");
         }
 
         public async Task<ExchangeResponse> ConvertAsync(ExchangeRequest exchangeRequest)
         {
-            _logger.LogInformation("***  ConvertAsync: ***");
+            _logger.LogInformation("ConvertAsync started with {@Request}", exchangeRequest);
 
-            try
+            if (string.IsNullOrWhiteSpace(exchangeRequest?.InputCurrency) || 
+                string.IsNullOrWhiteSpace(exchangeRequest?.OutputCurrency) || 
+                exchangeRequest?.Amount <= 0)
             {
-                if (string.IsNullOrWhiteSpace(exchangeRequest?.InputCurrency) || string.IsNullOrWhiteSpace(exchangeRequest?.OutputCurrency) || exchangeRequest?.Amount <= 0)
-                    //TODO throw domain specific exceptions
-                    throw new ValidationException("Invalid request!");
+                throw new ValidationException("Invalid request!");
+            }
 
-                var url = $"/{_settings.Version}/{_settings.ApiKey}/{_settings.Operation}/" +
-                  $"{exchangeRequest.InputCurrency}/{exchangeRequest.OutputCurrency}";
-
+            var url = $"/{_exchangeRateApiSettings.Version}/{_exchangeRateApiSettings.ApiKey}/{_exchangeRateApiSettings.Operation}/" +
+                      $"{exchangeRequest.InputCurrency}/{exchangeRequest.OutputCurrency}";
+            try 
+            { 
                 var response = await _httpClient.GetFromJsonAsync<ExchangeRateResponse>(url);
                 _logger.LogInformation($"*** end ConvertAsync ***");
                 //TODO may use AutoMapper to map response to ExchangeResponse if needed
@@ -49,14 +56,12 @@ namespace CurrencyConverter.Api.Services
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "*** ConvertAsync: Http error api ***");
-                //TODO if add global exception handling then no need to catch and re-throw here
+                _logger.LogError(ex, "ConvertAsync: HTTP error calling ExchangeRate API");
                 throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "*** ConvertAsync error  ***");
-                //TODO if add global exception handling then no need to catch and re-throw here
+                _logger.LogError(ex, "ConvertAsync: Unexpected error");
                 throw;
             }
         }
