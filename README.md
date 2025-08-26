@@ -1,9 +1,18 @@
 
 # CurrencyConverter.Api
 
-This project is an API service designed to convert currencies using an external exchange rate API. The main functionality is provided by the `CurrencyConverterService` class, which takes in an `ExchangeRequest` and returns an `ExchangeResponse`.
+This project is a test API service exploring HttpClient custom configuration. It connects to two external APIs (exchange rate and open weather):
+https://v6.exchangerate-api.com
+http://api.openweathermap.org
 
-The project leverages the `HttpClient` class for communication with an external currency conversion API. 
+The program is using IHttpClientFactory to get new HttpClient, where the factory reuses an existing HttpMessageHandler for multiple HttpClients until the handler’s lifetime expires. Once the handler lifetime expires, a new one is created and old connections are gracefully closed.
+- IHttpClientFactory keeps the HttpMessageHandler alive behind the scenes for a configured lifetime (default: 2 minutes).
+- Multiple HttpClient instances can reuse the same underlying connections.
+- This avoids extra handshakes and reduces latency
+
+Other functionality includes:
+- Retry logic of Http calls: 3 attempts, exponential backoff (2s, 4s, 8s)
+- Circuit breaker: break for 30s after 5 consecutive errors
 
 ## Prerequisites
 
@@ -11,7 +20,7 @@ Before running the solution, ensure you have the following installed:
 
 - .NET 8.0 or higher
 - Visual Studio or Visual Studio Code (with C# extension)
-- NuGet packages (e.g. Moq, MSTest) installed via NuGet Package Manager.
+- NuGet packages (e.g. Swashbuckle, Polly, Moq, MSTest) installed via NuGet Package Manager.
 
 ## How to Run the Solution
 
@@ -51,11 +60,11 @@ Before running the solution, ensure you have the following installed:
 
 ## How the Currency Conversion Works
 
-The main functionality of the service is in the `CurrencyConverterService` class, specifically the `ConvertAsync` method. The method:
+1. The main functionality of the service is in the `CurrencyConverterService` class, specifically the `ConvertAsync` method. The method:
 
-1. Takes an `ExchangeRequest` object containing the input and output currencies and the amount to convert.
-2. Sends a request to the external exchange rate API.
-3. Returns an `ExchangeResponse` with the converted value if successful.
+1.1 Takes an `ExchangeRequest` object containing the input and output currencies and the amount to convert.
+1.2 Sends a request to the external exchange rate API.
+1.3 Returns an `ExchangeResponse` with the converted value if successful.
 
 Example request:
 
@@ -66,6 +75,7 @@ Example request:
   "Amount": 100
 }
 ```
+2. Additional service has been created for getting weather temperature for particular city: `OpenWeatherService`
 
 ## Caveats
 
@@ -125,25 +135,15 @@ However, a few improvements could be made to handle errors in a more robust way:
    }
    ```
 
-4. **Timeout Handling**:
-
-   * Add proper handling for HTTP request timeouts. The `HttpClient` should have a timeout setting, and we should ensure we catch and handle timeouts explicitly, potentially offering a retry mechanism or graceful error handling.
-
-   Example:
-
-   ```csharp
-   httpClient.Timeout = TimeSpan.FromSeconds(30); // Set a reasonable timeout for the request
-   ```
-
-5. **Caching Exchange Rates**:
+4. **Caching Exchange Rates**:
 
    * Consider caching the exchange rates for a period of time (e.g., 1 hour if possible) to avoid unnecessary API calls and reduce external dependencies.
 
-6. **Rate Limiting**:
+5. **Rate Limiting**:
 
    * The free version of external exchange rate API may have rate limits or restrictions. 
 
-7. **Logging Improvements**:
+6. **Logging Improvements**:
 
    * Logging could be enhanced with additional context information (e.g., request IDs, transaction IDs) to make it easier to trace issues, especially in production environments.
 
