@@ -1,4 +1,6 @@
+using CurrencyConverter.Api.Helpers;
 using CurrencyConverter.Api.Models.ExchangeRate;
+using CurrencyConverter.Api.Models.OpenWeather;
 using CurrencyConverter.Api.Services;
 using CurrencyConverter.Api.Services.Interfaces;
 using Polly;
@@ -25,37 +27,17 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.Configure<ExchangeRateApiSettings>(builder.Configuration.GetSection("ExchangeRateApiSettings"));
+builder.Services.Configure<OpenWeatherApiSettings>(builder.Configuration.GetSection("OpenWeatherApiSettings"));
 
-//!!AK1 Registers IHttpClientFactory in DI.Adds connection pooling and handler lifecycle management automatically
-//!!AK1.1 PooledConnectionLifetime: The maximum lifetime a connection can stay in the pool before it is forcibly closed and recreated.
-//This means even if the TCP connection is still healthy, after 15 minutes it will be dropped and a new one will be created.
-//!!AK1.2 PooledConnectionIdleTimeout: The maximum time an idle (unused) connection can sit in the pool before being closed.
-//This means: if a connection hasn’t been used for 2 minutes, it will be closed.
-builder.Services.AddHttpClient("ExchangeRateApi", client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["ExchangeRateApiSettings:Url"] ?? "");
-    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-    // Request timeout (safe guard, in addition to handler timeouts)
-    client.Timeout = TimeSpan.FromSeconds(15);
-})
-.ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
-{
-    // TCP connection settings
-    PooledConnectionLifetime = TimeSpan.FromMinutes(15),   // recycle to respect DNS changes
-    PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2), // drop idle pool connections
-    MaxConnectionsPerServer = 20,                          // avoid simutaneous connections flooding on a single server
-    ConnectTimeout = TimeSpan.FromSeconds(5)               // fail fast on bad hosts
-})
-// Apply resilience policies
-.AddPolicyHandler(retryPolicy)
-.AddPolicyHandler(circuitBreakerPolicy);
+builder.Services.AddConfiguredHttpClient("ExchangeRateApi", builder.Configuration["ExchangeRateApiSettings:Url"]!, retryPolicy, circuitBreakerPolicy);
+builder.Services.AddConfiguredHttpClient("OpenWeatherApi", builder.Configuration["OpenWeatherApiSettings:Url"]!, retryPolicy, circuitBreakerPolicy);
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<ICurrencyConverterService, CurrencyConverterService>();
+builder.Services.AddScoped<IOpenWeatherService, OpenWeatherService>();
 
 var app = builder.Build();
 
