@@ -23,7 +23,7 @@ namespace CurrencyConverter.Api.Controllers
             //TODO add global exception handling - return uniform error response
             try
             {
-                //TODO may use Clean Architecture and add a mediator to handle requests
+                //TODO may use Clean Architecture (- )add a mediator to handle requests)
                 var result = await currencyConverterService.ConvertAsync(exchangeRequest);
                 return Ok(result);
             }

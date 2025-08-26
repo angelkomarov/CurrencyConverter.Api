@@ -56,11 +56,13 @@ namespace CurrencyConverter.Api.Services
             }
             catch (HttpRequestException ex)
             {
+                //TODO if add global exception handling then no need to catch and re-throw here
                 _logger.LogError(ex, "ConvertAsync: HTTP error calling ExchangeRate API");
                 throw;
             }
             catch (Exception ex)
             {
+                //TODO if add global exception handling then no need to catch and re-throw here
                 _logger.LogError(ex, "ConvertAsync: Unexpected error");
                 throw;
             }

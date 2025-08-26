@@ -1,0 +1,60 @@
+﻿using CurrencyConverter.Api.DTOs.ExchangeRate;
+using CurrencyConverter.Api.DTOs.OpenWeather;
+using CurrencyConverter.Api.Models.OpenWeather;
+using CurrencyConverter.Api.Services.Interfaces;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.Extensions.Options;
+using System.ComponentModel.DataAnnotations;
+using System.Net.Http;
+
+namespace CurrencyConverter.Api.Services
+{
+    public class OpenWeatherService : IOpenWeatherService
+    {
+        private readonly ILogger<CurrencyConverterService> _logger;
+        private readonly OpenWeatherApiSettings _openWeatherApiSettings;
+        private readonly HttpClient _httpClient;
+
+        public OpenWeatherService(IHttpClientFactory httpClientFactory,
+            ILogger<CurrencyConverterService> logger,
+            IOptions<OpenWeatherApiSettings> openWeatherApiSettings)
+        {
+            _logger = logger;
+            _openWeatherApiSettings = openWeatherApiSettings.Value;
+            _httpClient = httpClientFactory.CreateClient("OpenWeatherApi");           
+        }
+
+        public async Task<float?> GetCityTemperatureAsync(string city)
+        {
+            _logger.LogInformation("GetCityTemperatureAsync started with {@Request}", city);
+            if (string.IsNullOrEmpty(city)) 
+            {
+                throw new ValidationException("Invalid request!");
+            }
+
+            var url = $"/data/{_openWeatherApiSettings.Version}/find?q={city}&appid={_openWeatherApiSettings.AppId}";
+            try
+            {
+                CityWeatherResponse? weatherInfo = await _httpClient.GetFromJsonAsync<CityWeatherResponse>(url);
+
+                float? temp = null;
+                if (weatherInfo?.list?.Length > 0 && weatherInfo?.list[0]?.main?.temp != null)
+                    temp = weatherInfo?.list[0]?.main?.temp - 273; //kelvin
+                _logger.LogInformation($"*** end GetCityTemperatureAsync ***");
+                return temp;
+            }
+            catch (HttpRequestException ex)
+            {
+                //TODO if add global exception handling then no need to catch and re-throw here
+                _logger.LogError(ex, "GetCityTemperatureAsync: HTTP error calling Weather API");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                //TODO if add global exception handling then no need to catch and re-throw here
+                _logger.LogError(ex, "GetCityTemperatureAsync: Unexpected error");
+                throw;
+            }
+        }
+    }
+}
