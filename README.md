@@ -2,7 +2,7 @@
 # CurrencyConverter.Api
 
 This project is a test API service exploring HttpClient custom configuration. It connects to two external APIs (exchange rate and open weather):
-https://v6.exchangerate-api.com
+https://v6.exchangerate-api.com <br>
 http://api.openweathermap.org
 
 The program is using IHttpClientFactory to get new HttpClient, where the factory reuses an existing HttpMessageHandler for multiple HttpClients until the handler’s lifetime expires. Once the handler lifetime expires, a new one is created and old connections are gracefully closed.
