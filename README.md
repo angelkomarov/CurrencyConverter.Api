@@ -12,7 +12,7 @@ The program is using IHttpClientFactory to get new HttpClient, where the factory
 
 Other functionality includes:
 - Retry logic of Http calls: 3 attempts, exponential backoff (2s, 4s, 8s)
-- Circuit breaker: break for 30s after 5 consecutive errors
+- Circuit breaker: break after 5 consecutive failures, for 30 seconds
 
 ## Prerequisites
 
