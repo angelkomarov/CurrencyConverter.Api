@@ -62,8 +62,8 @@ Before running the solution, ensure you have the following installed:
 
 1. The main functionality of the service is in the `CurrencyConverterService` class, specifically the `ConvertAsync` method. The method:
 
-1.1 Takes an `ExchangeRequest` object containing the input and output currencies and the amount to convert.
-1.2 Sends a request to the external exchange rate API.
+1.1 Takes an `ExchangeRequest` object containing the input and output currencies and the amount to convert. <br>
+1.2 Sends a request to the external exchange rate API. <br>
 1.3 Returns an `ExchangeResponse` with the converted value if successful.
 
 Example request:
@@ -75,7 +75,7 @@ Example request:
   "Amount": 100
 }
 ```
-2. Additional service has been created for getting weather temperature for particular city: `OpenWeatherService`
+2. To simulate calls to mutiple APIS an additional service has been created for getting weather temperature for particular city: `OpenWeatherService`
 
 ## Caveats
 
