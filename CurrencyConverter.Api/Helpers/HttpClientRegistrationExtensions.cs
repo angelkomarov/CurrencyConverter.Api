@@ -9,7 +9,7 @@ namespace CurrencyConverter.Api.Helpers
             IAsyncPolicy<HttpResponseMessage> retryPolicy,
             IAsyncPolicy<HttpResponseMessage> circuitBreakerPolicy)
         {
-            //!!AK1 Registers IHttpClientFactory in DI.Adds connection pooling and handler lifecycle management automatically
+            //!!AK1 Registers IHttpClientFactory (as Singleton!) in DI.Adds connection pooling and handler lifecycle management automatically
             //!!AK1.1 PooledConnectionLifetime: The maximum lifetime a connection can stay in the pool before it is forcibly closed and recreated.
             //This means even if the TCP connection is still healthy, after 15 minutes it will be dropped and a new one will be created.
             //!!AK1.2 PooledConnectionIdleTimeout: The maximum time an idle (unused) connection can sit in the pool before being closed.

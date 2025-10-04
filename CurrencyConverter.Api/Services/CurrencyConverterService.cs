@@ -3,6 +3,7 @@ using CurrencyConverter.Api.Models.ExchangeRate;
 using CurrencyConverter.Api.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Polly.CircuitBreaker;
 using System.ComponentModel.DataAnnotations;
 using System.Net.Http.Headers;
 using System.Runtime;
@@ -54,16 +55,22 @@ namespace CurrencyConverter.Api.Services
                     Value = response?.conversion_rate * exchangeRequest.Amount ?? 0
                 };
             }
+            catch (BrokenCircuitException ex)
+            {
+                // Circuit breaker is OPEN, no request was even attempted
+                _logger.LogError(ex, "+++ Circuit breaker OPEN for ExchangeRate Api. Skipping call.");
+                throw;
+            }
             catch (HttpRequestException ex)
             {
-                //TODO if add global exception handling then no need to catch and re-throw here
-                _logger.LogError(ex, "ConvertAsync: HTTP error calling ExchangeRate API");
+                // This means all retries were exhausted (transient errors each time)
+                _logger.LogError(ex, "+++ ConvertAsync: HTTP error calling ExchangeRate API");
                 throw;
             }
             catch (Exception ex)
             {
-                //TODO if add global exception handling then no need to catch and re-throw here
-                _logger.LogError(ex, "ConvertAsync: Unexpected error");
+                // Unexpected error (serialization, mapping, etc.)
+                _logger.LogError(ex, "+++ ConvertAsync: Unexpected error");
                 throw;
             }
         }
