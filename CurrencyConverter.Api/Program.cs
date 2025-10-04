@@ -22,7 +22,7 @@ static IAsyncPolicy<HttpResponseMessage> CreateRetryPolicy()
     var jitterer = new Random();
     return HttpPolicyExtensions
         .HandleTransientHttpError() //HTTP 5xx responses (500, 502, 503, 504, etc. + 408 Request Timeout)
-        .OrResult(msg => msg.StatusCode == HttpStatusCode.NotFound) //HTTP 404 Not Found
+        //.OrResult(msg => msg.StatusCode == HttpStatusCode.NotFound) //HTTP 404 Not Found
         .WaitAndRetryAsync(
             3, // number of retries
             retryAttempt => {
@@ -38,7 +38,7 @@ static IAsyncPolicy<HttpResponseMessage> CreateRetryPolicyNoJitter()
     var jitterer = new Random();
     return HttpPolicyExtensions
         .HandleTransientHttpError() //HTTP 5xx responses (500, 502, 503, 504, etc. + 408 Request Timeout)
-        .OrResult(msg => msg.StatusCode == HttpStatusCode.NotFound) //HTTP 404 Not Found
+        //.OrResult(msg => msg.StatusCode == HttpStatusCode.NotFound) //HTTP 404 Not Found
         .WaitAndRetryAsync(
             3,
             retryAttempt =>
@@ -55,7 +55,7 @@ static IAsyncPolicy<HttpResponseMessage> CreateCircuitBreakerPolicy()
 {
     return HttpPolicyExtensions
         .HandleTransientHttpError() //HTTP 5xx responses (500, 502, 503, 504, etc. + 408 Request Timeout)
-        .OrResult(msg => msg.StatusCode == HttpStatusCode.NotFound) //HTTP 404 Not Found
+        //.OrResult(msg => msg.StatusCode == HttpStatusCode.NotFound) //HTTP 404 Not Found
         .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30));
 }
 
