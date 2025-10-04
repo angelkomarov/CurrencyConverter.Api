@@ -4,6 +4,7 @@ using CurrencyConverter.Api.Models.OpenWeather;
 using CurrencyConverter.Api.Services.Interfaces;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Options;
+using Polly.CircuitBreaker;
 using System.ComponentModel.DataAnnotations;
 using System.Net.Http;
 
@@ -43,16 +44,22 @@ namespace CurrencyConverter.Api.Services
                 _logger.LogInformation($"*** end GetCityTemperatureAsync ***");
                 return temp;
             }
+            catch (BrokenCircuitException ex)
+            {
+                // Circuit breaker is OPEN, no request was even attempted
+                _logger.LogError(ex, "+++ Circuit breaker OPEN for Weather API. Skipping call.");
+                throw;
+            }
             catch (HttpRequestException ex)
             {
-                //TODO if add global exception handling then no need to catch and re-throw here
-                _logger.LogError(ex, "GetCityTemperatureAsync: HTTP error calling Weather API");
+                // This means all retries were exhausted (transient errors each time)
+                _logger.LogError(ex, "+++ GetCityTemperatureAsync: HTTP error calling Weather API");
                 throw;
             }
             catch (Exception ex)
             {
-                //TODO if add global exception handling then no need to catch and re-throw here
-                _logger.LogError(ex, "GetCityTemperatureAsync: Unexpected error");
+                // Unexpected error (serialization, mapping, etc.)
+                _logger.LogError(ex, "+++ GetCityTemperatureAsync: Unexpected error");
                 throw;
             }
         }
