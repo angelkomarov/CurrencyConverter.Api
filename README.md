@@ -1,153 +1,134 @@
 
 # CurrencyConverter.Api
 
-This project is an API service designed to convert currencies using an external exchange rate API. The main functionality is provided by the `CurrencyConverterService` class, which takes in an `ExchangeRequest` and returns an `ExchangeResponse`.
+A test API project demonstrating **HttpClient resiliency**, **Polly policies**, and **centralized exception handling** using **Problem Details (RFC 7807)**.  
+It acts as a currency converter (via an external exchange-rate API) and also fetches weather data to showcase multi-API integration.
+## 🚀 Features
 
-The project leverages the `HttpClient` class for communication with an external currency conversion API. 
+- Typed `HttpClient` via `IHttpClientFactory`
+- **Polly-based resiliency**:
+  - Timeout policy
+  - Retry with exponential backoff
+  - Circuit breaker
+- Centralized exception handling with structured RFC 7807 error responses
+- Clean, extensible architecture (services, DI, logging)
+- Unit test coverage for core logic
 
 ## Prerequisites
 
 Before running the solution, ensure you have the following installed:
 
-- .NET 8.0 or higher
-- Visual Studio or Visual Studio Code (with C# extension)
-- NuGet packages (e.g. Moq, MSTest) installed via NuGet Package Manager.
+- [.NET 8 SDK](https://dotnet.microsoft.com/download)
+- API keys for:
+  - [ExchangeRate API](https://www.exchangerate-api.com/)
+  - [OpenWeatherMap](https://openweathermap.org/api)
 
-## How to Run the Solution
+## 🔧 Configuration
 
-1. Clone the repository to your local machine:
-
-   ```bash
-   git clone https://github.com/angelkomarov/CurrencyConverter.Api.git
-
-
-2. Open the solution in Visual Studio or your preferred IDE.
-
-3. **Restore dependencies**:
-
-   If you're using Visual Studio, the dependencies should restore automatically. Otherwise, you can manually restore the NuGet packages from the terminal:
-
-   ```bash
-   dotnet restore
-   ```
-
-4. **Run the application**:
-
-   To run the API, use the following command from the project root:
-
-   ```bash
-   dotnet run --project CurrencyConverter.Api
-   ```
-
-5. **Run Tests**:
-
-   The solution includes unit tests using MSTest and Moq. To run the tests, use the following command:
-
-   ```bash
-   dotnet test
-   ```
-
-   This will run all the tests defined in the `CurrencyConverter.Api.Tests` project.
-
-## How the Currency Conversion Works
-
-The main functionality of the service is in the `CurrencyConverterService` class, specifically the `ConvertAsync` method. The method:
-
-1. Takes an `ExchangeRequest` object containing the input and output currencies and the amount to convert.
-2. Sends a request to the external exchange rate API.
-3. Returns an `ExchangeResponse` with the converted value if successful.
-
-Example request:
+Use `appsettings.json` (or override with environment variables). Example:
 
 ```json
 {
-  "InputCurrency": "AUD",
-  "OutputCurrency": "USD",
-  "Amount": 100
+  "ApiSettings": {
+    "ExchangeRate": {
+      "BaseUrl": "https://v6.exchangerate-api.com",
+      "ApiKey": "YOUR_EXCHANGE_KEY"
+    },
+    "OpenWeather": {
+      "BaseUrl": "https://api.openweathermap.org",
+      "ApiKey": "YOUR_WEATHER_KEY"
+    }
+  }
 }
 ```
 
-## Caveats
-
-### Handling `HttpRequestException`
-
-The project currently handles `HttpRequestException` when making requests to the external exchange rate API. The exception handling is implemented in the following way:
-
-* If the API fails (e.g., network issues, invalid response, etc.), an `HttpRequestException` is thrown.
-* The `ConvertAsync` method catches this exception, logs the error, and rethrows the exception to allow the calling function to handle it appropriately.
-
-Example:
-
-```csharp
-catch (HttpRequestException ex)
+## 🚦 Running the API
+```bash
+git clone https://github.com/angelkomarov/CurrencyConverter.Api.git
+cd CurrencyConverter.Api
+dotnet restore
+dotnet run --project CurrencyConverter.Api
+API will be available at https://localhost:5001 (or http://localhost:5000)
+```
+### 🔄 Currency Conversion Flow
+Endpoint
+```bash
+POST /ExchangeService
+```
+Sample Request
+```bash json
 {
-    logger.LogError(ex, "*** ConvertAsync: Http error api ***");
-    throw; // Re-throwing the exception for further handling
+  "inputCurrency": "AUD",
+  "outputCurrency": "USD",
+  "amount": 100
 }
 ```
+Sample Response
+```json
+{
+  "inputCurrency": "AUD",
+  "outputCurrency": "USD",
+  "amount": 100,
+  "value": 64.32
+}
+```
+### 🔄 Get Temperature Flow
+Endpoint
+```bash
+GET /TemperatureService?city=Rome
+```
 
-In the case of an error, an appropriate error message is logged, and the exception is propagated upwards.
+## 🛡️ Error Handling & Problem Details
+This API uses standardized error responses based on RFC 7807 - Problem Details for HTTP APIs.
 
-However, a few improvements could be made to handle errors in a more robust way:
+# 📦 Error Format
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc7231#section-6.X.X",
+  "title": "Short description",
+  "status": 4xx/5xx,
+  "detail": "More details about the error"
+}
+```
+## 🔁 Exception-to-Response Mapping
 
-### Potential Improvements:
+| Exception Type              | Scenario                                | HTTP Status | `type` URI                                            | Title                      |
+|----------------------------|------------------------------------------|-------------|--------------------------------------------------------|----------------------------|
+| `ValidationException`      | Invalid input                            | 400         | `https://tools.ietf.org/html/rfc7231#section-6.5.1`   | Bad Request                |
+| `HttpRequestException`     | External API failure                     | 502         | `https://tools.ietf.org/html/rfc7231#section-6.6.3`   | External API error         |
+| `TimeoutRejectedException`| Polly timeout triggered                  | 503         | `https://tools.ietf.org/html/rfc7231#section-6.6.4`   | External API error            |
+| `BrokenCircuitException`   | Circuit breaker is open                  | 503         | `https://tools.ietf.org/html/rfc7231#section-6.6.4`   | External API error |
+| *(Unhandled exceptions)*   | Internal server error                    | 500         | `https://tools.ietf.org/html/rfc7231#section-6.6.1`   | Internal Server Error      |
 
-1. **Global Exception Handling**:
+## ✅ Testing
+- Unit tests included
+- Uses Moq and testable HttpMessageHandler
+- Covers:
+  - Service logic
+  - Timeout/retry behavior
+  - Exception handling
+  - Input validation
 
-   * It might be beneficial to implement global exception handling using middleware or a centralized error handler, which would help avoid repetitive try-catch blocks in individual services.
+Run tests with:
+```bash
+dotnet test
+```
 
-2. **API Key Management**:
+## 📦 Dependencies
+- `Polly` – resiliency policies
+- `Microsoft.Extensions.Http` – HttpClient factory
+- `Swashbuckle` – Swagger/OpenAPI
+- `MSTest, Moq` – testing
 
-   * The API key is hardcoded in the code (`fb26a56ef07a26d08e3863d2`). This is not secure for production use. The API key better be stored in a secure configuration file (e.g., `appsettings.json`) or environment variables.
+## 🧭 Future Enhancements
+- Add caching for currency rates
+- Support fallback APIs for redundancy
+- Rate limiting / API throttling
+- Use secrets manager (e.g., Azure Key Vault)
+- Integration tests with wiremock or similar
 
-   Example (`appsettings.json`):
+## 📄 License
 
-   ```json
-   {
-     "ApiSettings": {
-       "BaseUrl": "https://v6.exchangerate-api.com",
-       "ApiKey": "your-api-key-here"
-     }
-   }
-   ```
+This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
 
-   These settings then can be injected into the `CurrencyConverterService` through dependency injection.
-
-3. **API Response Validation**:
-
-   * Currently, the code assumes the API will always return a valid response in the expected format. It would be safer to add validation logic to check if the response is not `null` and has a valid `conversion_rate`.
-   * Example validation:
-
-   ```csharp
-   if (response == null || response.conversion_rate == null)
-   {
-       throw new Exception("Invalid response from the exchange rate API.");
-   }
-   ```
-
-4. **Timeout Handling**:
-
-   * Add proper handling for HTTP request timeouts. The `HttpClient` should have a timeout setting, and we should ensure we catch and handle timeouts explicitly, potentially offering a retry mechanism or graceful error handling.
-
-   Example:
-
-   ```csharp
-   httpClient.Timeout = TimeSpan.FromSeconds(30); // Set a reasonable timeout for the request
-   ```
-
-5. **Caching Exchange Rates**:
-
-   * Consider caching the exchange rates for a period of time (e.g., 1 hour if possible) to avoid unnecessary API calls and reduce external dependencies.
-
-6. **Rate Limiting**:
-
-   * The free version of external exchange rate API may have rate limits or restrictions. 
-
-7. **Logging Improvements**:
-
-   * Logging could be enhanced with additional context information (e.g., request IDs, transaction IDs) to make it easier to trace issues, especially in production environments.
-
-## Additional Notes
-
-* The external API might not be available all the time, so it's a good idea to implement retries for transient failures and notify the user when the service is temporarily unavailable.
 
