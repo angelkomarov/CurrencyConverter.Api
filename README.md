@@ -3,6 +3,7 @@
 
 A test API project demonstrating **HttpClient resiliency**, **Polly policies**, and **centralized exception handling** using **Problem Details (RFC 7807)**.  
 It acts as a currency converter (via an external exchange-rate API) and also fetches weather data to showcase multi-API integration.
+
 ## 🚀 Features
 
 - Typed `HttpClient` via `IHttpClientFactory`
