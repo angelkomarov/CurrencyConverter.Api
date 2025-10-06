@@ -20,21 +20,24 @@ namespace CurrencyConverter.Api.Controllers
         [HttpPost("ExchangeService")]
         public async Task<IActionResult> ExchangeServiceAsync(ExchangeRequest exchangeRequest)
         {
-            //TODO add global exception handling - return uniform error response
-            try
-            {
-                //TODO may use Clean Architecture (- )add a mediator to handle requests)
-                var result = await currencyConverterService.ConvertAsync(exchangeRequest);
-                return Ok(result);
-            }
-            catch (ValidationException ex)
-            {
-                return BadRequest("Invalid exchange request.");
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Unable to process exchange request." });
-            }
+            //TODO may use Clean Architecture (- )add a mediator to handle requests)
+            var result = await currencyConverterService.ConvertAsync(exchangeRequest);
+            return Ok(result);
+
+            //try
+            //{
+            //    //TODO may use Clean Architecture (- )add a mediator to handle requests)
+            //    var result = await currencyConverterService.ConvertAsync(exchangeRequest);
+            //    return Ok(result);
+            //}
+            //catch (ValidationException ex)
+            //{
+            //    return BadRequest("Invalid exchange request.");
+            //}
+            //catch (Exception ex)
+            //{
+            //    return StatusCode(StatusCodes.Status500InternalServerError, new { message = "Unable to process exchange request." });
+            //}
         }
     }
 }

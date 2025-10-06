@@ -1,3 +1,4 @@
+using CurrencyConverter.Api.Filters;
 using CurrencyConverter.Api.Helpers;
 using CurrencyConverter.Api.Models.ExchangeRate;
 using CurrencyConverter.Api.Models.OpenWeather;
@@ -59,7 +60,17 @@ static IAsyncPolicy<HttpResponseMessage> CreateCircuitBreakerPolicy()
         .CircuitBreakerAsync(5, TimeSpan.FromSeconds(30));
 }
 
+static IAsyncPolicy<HttpResponseMessage> CreateTimeoutPolicy()
+{
+    return Policy.TimeoutAsync<HttpResponseMessage>(TimeSpan.FromSeconds(100)); //!!AK1.4 100 sec timeout = HttpClient default value
+}
+
+// -------------------- BUILD APP --------------------
+
 var builder = WebApplication.CreateBuilder(args);
+//!!AK3.1 add as a service Known Exceptions Handler - for know exceptions
+builder.Services.AddExceptionHandler<KnownExceptionsHandler>();
+
 
 // -------------------- SERVICES --------------------
 builder.Services.AddControllers();
@@ -67,8 +78,8 @@ builder.Services.Configure<ExchangeRateApiSettings>(builder.Configuration.GetSec
 builder.Services.Configure<OpenWeatherApiSettings>(builder.Configuration.GetSection("OpenWeatherApiSettings"));
 
 //!!AK register HttpClients with Polly policies
-builder.Services.AddConfiguredHttpClient("ExchangeRateApi", builder.Configuration["ExchangeRateApiSettings:Url"]!, CreateRetryPolicy(), CreateCircuitBreakerPolicy());
-builder.Services.AddConfiguredHttpClient("OpenWeatherApi", builder.Configuration["OpenWeatherApiSettings:Url"]!, CreateRetryPolicy(), CreateCircuitBreakerPolicy());
+builder.Services.AddConfiguredHttpClient("ExchangeRateApi", builder.Configuration["ExchangeRateApiSettings:Url"]!, CreateRetryPolicy(), CreateCircuitBreakerPolicy(), CreateTimeoutPolicy());
+builder.Services.AddConfiguredHttpClient("OpenWeatherApi", builder.Configuration["OpenWeatherApiSettings:Url"]!, CreateRetryPolicy(), CreateCircuitBreakerPolicy(), CreateTimeoutPolicy());
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -89,6 +100,9 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+//!!AK3.2 add as middleware Default Exception Handler - for all unknown exceptions
+app.UseDefaultExceptionHandler();
 
 app.MapControllers();
 
