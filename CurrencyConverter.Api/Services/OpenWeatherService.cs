@@ -1,10 +1,12 @@
 ﻿using CurrencyConverter.Api.DTOs.ExchangeRate;
 using CurrencyConverter.Api.DTOs.OpenWeather;
+using CurrencyConverter.Api.Exceptions;
 using CurrencyConverter.Api.Models.OpenWeather;
 using CurrencyConverter.Api.Services.Interfaces;
 using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.Extensions.Options;
 using Polly.CircuitBreaker;
+using Polly.Timeout;
 using System.ComponentModel.DataAnnotations;
 using System.Net.Http;
 
@@ -47,19 +49,24 @@ namespace CurrencyConverter.Api.Services
             catch (BrokenCircuitException ex)
             {
                 // Circuit breaker is OPEN, no request was even attempted
-                _logger.LogError(ex, "+++ Circuit breaker OPEN for Weather API. Skipping call.");
-                throw;
+                _logger.LogError(ex, "+++ Circuit is open - Weather API unavailable.");
+                throw new ExternalApiUnavailableException("External service temporarily unavailable.", ex);
+            }
+            catch (TimeoutRejectedException ex)
+            {
+                _logger.LogError(ex, "+++ Weather API timed out.");
+                throw new ExternalApiUnavailableException("External service timeout.", ex);
             }
             catch (HttpRequestException ex)
             {
                 // This means all retries were exhausted (transient errors each time)
-                _logger.LogError(ex, "+++ GetCityTemperatureAsync: HTTP error calling Weather API");
-                throw;
+                _logger.LogError(ex, "+++ Weather API HTTP error");
+                throw new ExternalApiException("Can't obtain city temperature!");
             }
             catch (Exception ex)
             {
                 // Unexpected error (serialization, mapping, etc.)
-                _logger.LogError(ex, "+++ GetCityTemperatureAsync: Unexpected error");
+                _logger.LogError(ex, "+++ Weather API: unexpected error");
                 throw;
             }
         }

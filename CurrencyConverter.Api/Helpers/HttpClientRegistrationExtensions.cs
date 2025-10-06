@@ -7,7 +7,8 @@ namespace CurrencyConverter.Api.Helpers
     {
         public static IHttpClientBuilder AddConfiguredHttpClient(this IServiceCollection services, string name, string baseUrl, 
             IAsyncPolicy<HttpResponseMessage> retryPolicy,
-            IAsyncPolicy<HttpResponseMessage> circuitBreakerPolicy)
+            IAsyncPolicy<HttpResponseMessage> circuitBreakerPolicy,
+            IAsyncPolicy<HttpResponseMessage> timeoutPolicy)
         {
             //!!AK1 Registers IHttpClientFactory (as Singleton!) in DI.Adds connection pooling and handler lifecycle management automatically
             //!!AK1.1 PooledConnectionLifetime: The maximum lifetime a connection can stay in the pool before it is forcibly closed and recreated.
@@ -18,6 +19,7 @@ namespace CurrencyConverter.Api.Helpers
             {
                 client.BaseAddress = new Uri(baseUrl);
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                client.Timeout = Timeout.InfiniteTimeSpan; //!!AK1.4 Let Polly handle timeouts instead
             })
             .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
             {
@@ -29,7 +31,8 @@ namespace CurrencyConverter.Api.Helpers
             })
             // Apply resilience policies
             .AddPolicyHandler(retryPolicy)
-            .AddPolicyHandler(circuitBreakerPolicy);
+            .AddPolicyHandler(circuitBreakerPolicy)
+            .AddPolicyHandler(timeoutPolicy); //!!AK1.4 add policy timeout
         }
     }
 }

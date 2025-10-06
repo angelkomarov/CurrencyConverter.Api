@@ -1,9 +1,11 @@
 ﻿using CurrencyConverter.Api.DTOs.ExchangeRate;
+using CurrencyConverter.Api.Exceptions;
 using CurrencyConverter.Api.Models.ExchangeRate;
 using CurrencyConverter.Api.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly.CircuitBreaker;
+using Polly.Timeout;
 using System.ComponentModel.DataAnnotations;
 using System.Net.Http.Headers;
 using System.Runtime;
@@ -58,19 +60,25 @@ namespace CurrencyConverter.Api.Services
             catch (BrokenCircuitException ex)
             {
                 // Circuit breaker is OPEN, no request was even attempted
-                _logger.LogError(ex, "+++ Circuit breaker OPEN for ExchangeRate Api. Skipping call.");
-                throw;
+                _logger.LogError(ex, "+++ Circuit is open - ExchangeRate API unavailable.");
+                throw new ExternalApiUnavailableException("External service temporarily unavailable.", ex);
+            }
+            catch (TimeoutRejectedException ex)
+            {
+                _logger.LogError(ex, "+++ ExchangeRate API timed out.");
+                throw new ExternalApiUnavailableException("External service timeout.", ex);
             }
             catch (HttpRequestException ex)
             {
                 // This means all retries were exhausted (transient errors each time)
-                _logger.LogError(ex, "+++ ConvertAsync: HTTP error calling ExchangeRate API");
-                throw;
+                _logger.LogError(ex, "+++ ExchangeRate API HTTP error");
+                throw new ExternalApiException("Can't obtain reates!");
+
             }
             catch (Exception ex)
             {
                 // Unexpected error (serialization, mapping, etc.)
-                _logger.LogError(ex, "+++ ConvertAsync: Unexpected error");
+                _logger.LogError(ex, "+++ ExchangeRate API unexpected error");
                 throw;
             }
         }
