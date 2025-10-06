@@ -23,37 +23,59 @@ Before running the solution, ensure you have the following installed:
   - [ExchangeRate API](https://www.exchangerate-api.com/)
   - [OpenWeatherMap](https://openweathermap.org/api)
 
-   ```bash
-   dotnet test
-   ```
+## 🔧 Configuration
 
 Use `appsettings.json` (or override with environment variables). Example:
 
 ```json
 {
-  "InputCurrency": "AUD",
-  "OutputCurrency": "USD",
-  "Amount": 100
+  "ApiSettings": {
+    "ExchangeRate": {
+      "BaseUrl": "https://v6.exchangerate-api.com",
+      "ApiKey": "YOUR_EXCHANGE_KEY"
+    },
+    "OpenWeather": {
+      "BaseUrl": "https://api.openweathermap.org",
+      "ApiKey": "YOUR_WEATHER_KEY"
+    }
+  }
 }
 ```
 
-## Caveats
-
-### Handling `HttpRequestException`
-
-The project currently handles `HttpRequestException` when making requests to the external exchange rate API. The exception handling is implemented in the following way:
-
-* If the API fails (e.g., network issues, invalid response, etc.), an `HttpRequestException` is thrown.
-* The `ConvertAsync` method catches this exception, logs the error, and rethrows the exception to allow the calling function to handle it appropriately.
-
-Example:
-
-```csharp
-catch (HttpRequestException ex)
+## 🚦 Running the API
+```bash
+git clone https://github.com/angelkomarov/CurrencyConverter.Api.git
+cd CurrencyConverter.Api
+dotnet restore
+dotnet run --project CurrencyConverter.Api
+API will be available at https://localhost:5001 (or http://localhost:5000)
+```
+### 🔄 Currency Conversion Flow
+Endpoint
+```bash
+POST /ExchangeService
+```
+Sample Request
+```bash json
 {
-    logger.LogError(ex, "*** ConvertAsync: Http error api ***");
-    throw; // Re-throwing the exception for further handling
+  "inputCurrency": "AUD",
+  "outputCurrency": "USD",
+  "amount": 100
 }
+```
+Sample Response
+```json
+{
+  "inputCurrency": "AUD",
+  "outputCurrency": "USD",
+  "amount": 100,
+  "value": 64.32
+}
+```
+### 🔄 Get Temperature Flow
+Endpoint
+```bash
+GET /TemperatureService?city=Rome
 ```
 
 ## 🛡️ Error Handling & Problem Details
@@ -92,7 +114,11 @@ Run tests with:
 dotnet test
 ```
 
-   * The free version of external exchange rate API may have rate limits or restrictions. 
+## 📦 Dependencies
+- `Polly` – resiliency policies
+- `Microsoft.Extensions.Http` – HttpClient factory
+- `Swashbuckle` – Swagger/OpenAPI
+- `MSTest, Moq` – testing
 
 ## 🧭 Future Enhancements
 - Add caching for currency rates
@@ -101,9 +127,8 @@ dotnet test
 - Use secrets manager (e.g., Azure Key Vault)
 - Integration tests with wiremock or similar
 
-   * Logging could be enhanced with additional context information (e.g., request IDs, transaction IDs) to make it easier to trace issues, especially in production environments.
+## 📄 License
 
-## Additional Notes
+This project is licensed under the [MIT License](https://opensource.org/licenses/MIT).
 
-* The external API might not be available all the time, so it's a good idea to implement retries for transient failures and notify the user when the service is temporarily unavailable.
 
